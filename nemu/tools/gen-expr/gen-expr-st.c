@@ -16,16 +16,17 @@ static char *code_format =
 "  return 0; "
 "}";
 
-//static void gen_rand_expr() {
-//  buf[0] = '\0';
-//}
-
+#ifdef __ICS_EXPORT
+static inline void gen_rand_expr() {
+  buf[0] = '\0';
+}
+#else
 static char *pbuf;
 
 #define format_buf(fmt, ...) pbuf += sprintf(pbuf, fmt, ##__VA_ARGS__)
 
 static inline uint32_t choose(uint32_t max) {
-          return rand() % max;
+  return rand() % max;
 }
 
 static inline void gen_rand_op() {
@@ -34,7 +35,7 @@ static inline void gen_rand_op() {
 }
 
 static inline void gen_num() {
-  format_buf("%uu", rand());
+  format_buf("%uu", rand()%100);
 }
 
 static inline void gen_space() {
@@ -76,6 +77,15 @@ static inline void gen_rand_expr() {
   gen_space();
 }
 
+void remove_u(char *p) {
+  char *q = p;
+  while ((q = strchr(q, 'u')) != NULL) {
+    // reuse code_buf
+    strcpy(code_buf, q + 1);
+    strcpy(q, code_buf);
+  }
+}
+#endif
 
 int main(int argc, char *argv[]) {
   int seed = time(0);
@@ -84,31 +94,39 @@ int main(int argc, char *argv[]) {
   if (argc > 1) {
     sscanf(argv[1], "%d", &loop);
   }
-  printf("%d\n",loop);
   int i;
   for (i = 0; i < loop; i ++) {
+#ifndef __ICS_EXPORT
+    nr_op = 0;
+    pbuf = buf;
+#endif
     gen_rand_expr();
-    printf(code_format,buf);
+
     sprintf(code_buf, code_format, buf);
-    FILE *fp = fopen("/home/sxchen/ics2021/nemu/tools/gen-expr/.code.c", "w");
-//    FILE *fp = fopen("/tmp/.code.c", "w");
-//    printf("fp=%d\n",*fp);
+
+    FILE *fp = fopen("/tmp/.code.c", "w");
     assert(fp != NULL);
     fputs(code_buf, fp);
     fclose(fp);
 
-    int ret = system("gcc /home/sxchen/ics2021/nemu/tools/gen-expr/.code.c -o /home/sxchen/ics2021/nemu/tools/gen-expr/.expr");
+    int ret = system("gcc /tmp/.code.c -o /tmp/.expr");
     if (ret != 0) continue;
 
-    fp = popen("/home/sxchen/ics2021/nemu/tools/gen-expr/.expr", "r");
+    fp = popen("/tmp/.expr", "r");
     assert(fp != NULL);
 
     int result;
-    if( fscanf(fp, "%d", &result)!=1){
-        printf("Writing the results to file error!\n");
+    if(fscanf(fp, "%d", &result)!=1){
+        printf("Writing to the file error!\n");
     }
-    //fscanf(fp, "%d", &result);
+#ifndef __ICS_EXPORT
+    ret = pclose(fp);
+    if (ret != 0) continue;
+
+    remove_u(buf);
+#else
     pclose(fp);
+#endif
 
     printf("%u %s\n", result, buf);
   }

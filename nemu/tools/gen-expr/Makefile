@@ -1,3 +1,3 @@
 NAME = gen-expr
-SRCS = gen-expr.c
+SRCS = gen-expr-st.c
 include $(NEMU_HOME)/scripts/build.mk
