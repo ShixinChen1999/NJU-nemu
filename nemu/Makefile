@@ -44,3 +44,7 @@ else
 # Include rules to build NEMU
 include $(NEMU_HOME)/scripts/native.mk
 endif
+
+count:
+	find . -name "*.[ch]"|xargs wc -l|grep "total"|awk '{print $1}'	
+	#find . -name "*.java"|xargs cat|grep -v ^$|wc -l  #no blankline
