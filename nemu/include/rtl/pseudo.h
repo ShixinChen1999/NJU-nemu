@@ -27,7 +27,15 @@ static inline def_rtl(neg, rtlreg_t *dest, const rtlreg_t* src1) {
 
 static inline def_rtl(sext, rtlreg_t* dest, const rtlreg_t* src1, int width) {
   // dest <- signext(src1[(width * 8 - 1) .. 0])
-  TODO();
+   const uint32_t word_wid=sizeof(word_t);
+   if(word_wid==width){
+        rtl_mv(s, dest, src1);
+    }else{
+        //assert(width == 1 || width == 2 || MUXDEF(CONFIG_ISA64, width == 4, false));
+         rtl_slli(s, dest, src1, (word_wid - width) * 8);
+         rtl_srai(s, dest, dest, (word_wid - width) * 8);
+    }
+ // TODO();
 }
 
 static inline def_rtl(zext, rtlreg_t* dest, const rtlreg_t* src1, int width) {
